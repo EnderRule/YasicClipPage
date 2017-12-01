@@ -8,6 +8,7 @@
 
 #import "AppDelegate.h"
 #import "YasicClipPage.h"
+#import "ViewController.h"
 
 @interface AppDelegate ()
 
@@ -19,8 +20,8 @@
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
     self.window = [[UIWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
     [self.window setBackgroundColor:[UIColor whiteColor]];
-    YasicClipPage *vc = [[YasicClipPage alloc] init];
-    [self.window setRootViewController:vc];
+    ViewController *vc = [[ViewController alloc] init];
+    [self.window setRootViewController:[[UINavigationController alloc]initWithRootViewController:vc]];
     [self.window makeKeyAndVisible];
     return YES;
 }

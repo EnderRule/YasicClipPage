@@ -24,7 +24,6 @@ typedef NS_ENUM(NSInteger, ACTIVEGESTUREVIEW) {
 
 @interface YasicClipPage ()
 
-@property (strong, nonatomic) UIImage *targetImage;
 @property(strong, nonatomic) UIImageView *bigImageView;
 @property(strong, nonatomic) UIView *cropView;
 
@@ -46,13 +45,33 @@ typedef NS_ENUM(NSInteger, ACTIVEGESTUREVIEW) {
 
 @implementation YasicClipPage
 
+-(CGFloat)cropSizeRate{
+    if (_cropSizeRate == 0) {
+        return 16.0/9.0;
+    }
+    return _cropSizeRate;
+}
+
+-(UIToolbar *)toolBar{
+    if (!_toolBar){
+        _toolBar = [[UIToolbar alloc]init];
+        _toolBar.backgroundColor = [[UIColor whiteColor] colorWithAlphaComponent:0.45];
+        
+        UIBarButtonItem *space = [[UIBarButtonItem alloc]initWithBarButtonSystemItem:UIBarButtonSystemItemFlexibleSpace target:nil  action:nil ];
+        UIBarButtonItem *done = [[UIBarButtonItem alloc]initWithTitle:@"完成" style:UIBarButtonItemStyleDone target:self  action:@selector(cropImage)];
+        UIBarButtonItem *cancel = [[UIBarButtonItem alloc]initWithTitle:@"取消" style:UIBarButtonItemStyleDone target:self  action:@selector(cropCancel)];
+        [_toolBar setItems:@[space,done,space,cancel,space]];
+        
+    }
+    return _toolBar;
+}
+
 - (void)viewDidLoad {
     [super viewDidLoad];
     self.view.backgroundColor = [UIColor blackColor];
-    self.targetImage = [UIImage imageNamed:@"TARGET_IMG"];
     
-    self.clipWidth = SCREEN_WIDTH;
-    self.clipHeight = self.clipWidth * 9/16;
+    self.clipWidth = SCREEN_WIDTH - 40;
+    self.clipHeight = self.clipWidth/self.cropSizeRate;
     
     self.cropAreaX = (SCREEN_WIDTH - self.clipWidth)/2;
     self.cropAreaY = (SCREEN_HEIGHT - self.clipHeight)/2;
@@ -60,17 +79,21 @@ typedef NS_ENUM(NSInteger, ACTIVEGESTUREVIEW) {
     self.cropAreaHeight = self.clipHeight;
     
     self.bigImageView.image = self.targetImage;
-}
-
-- (void)viewWillAppear:(BOOL)animated
-{
+    
     [self.view addSubview:self.cropView];
     [self.view addSubview:self.bigImageView];
     
-    [self.cropView mas_makeConstraints:^(MASConstraintMaker *make) {
-        make.left.right.top.bottom.equalTo(self.view);
+    [self.view addSubview:self.toolBar];
+    [self.toolBar mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.right.bottom.equalTo(self.view);
+        make.height.equalTo(@44.0);
     }];
     
+    [self.cropView mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.right.top.equalTo(self.view);
+        make.bottom.equalTo(self.toolBar.mas_top);
+    }];
+
     CGFloat tempWidth = 0.0;
     CGFloat tempHeight = 0.0;
     
@@ -90,7 +113,6 @@ typedef NS_ENUM(NSInteger, ACTIVEGESTUREVIEW) {
     }];
     self.originalFrame = CGRectMake(self.cropAreaX - (tempWidth - self.cropAreaWidth)/2, self.cropAreaY - (tempHeight - self.cropAreaHeight)/2, tempWidth, tempHeight);
     [self addAllGesture];
-    [super viewWillAppear:animated];
 }
 
 - (void)viewDidAppear:(BOOL)animated
@@ -98,7 +120,6 @@ typedef NS_ENUM(NSInteger, ACTIVEGESTUREVIEW) {
     [super viewDidAppear:animated];
     [self setUpCropLayer];
 }
-
 -(void)addAllGesture
 {
     // 捏合手势
@@ -134,6 +155,10 @@ typedef NS_ENUM(NSInteger, ACTIVEGESTUREVIEW) {
             [view setCenter:CGPointMake(view.center.x + translation.x, view.center.y + translation.y)];
             [panGesture setTranslation:CGPointZero inView:view.superview];
         }
+    }
+    
+    if (!_allowEditCropRect && self.activeGestureView != BIGIMAGEVIEW){
+        return;
     }
     
     // 滑动过程中进行位置改变
@@ -334,6 +359,18 @@ typedef NS_ENUM(NSInteger, ACTIVEGESTUREVIEW) {
     }
 }
 
+-(void)cropCancel{
+    if (self.cancel){
+        self.cancel();
+    }
+    [self dismiss];
+}
+
+-(void)dismiss{
+    [self.cropView removeFromSuperview];
+    [self dismissViewControllerAnimated:true  completion:nil];
+}
+
 // 裁剪图片并调用返回Block
 - (void)cropImage
 {
@@ -346,7 +383,13 @@ typedef NS_ENUM(NSInteger, ACTIVEGESTUREVIEW) {
     
     CGImageRef sourceImageRef = [self.targetImage CGImage];
     CGImageRef newImageRef = CGImageCreateWithImageInRect(sourceImageRef, cropRect);
-    UIImage *newImage = [UIImage imageWithCGImage:newImageRef];
+    if (newImageRef){
+        UIImage *newImage = [UIImage imageWithCGImage:newImageRef];
+    
+        if (self.completion){
+            self.completion(newImage, cropRect.size);
+        }
+    }
 }
 
 - (void)setUpCropLayer

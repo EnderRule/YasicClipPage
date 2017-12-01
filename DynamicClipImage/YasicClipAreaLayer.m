@@ -20,6 +20,8 @@ static CGFloat const lineWidth = 3;
 {
     self = [super init];
     if (self) {
+        _cropRect = CGRectMake(50, 50, SCREEN_WIDTH - 50, 400);
+        
         _cropAreaLeft = 50;
         _cropAreaTop = 50;
         _cropAreaRight = SCREEN_WIDTH - self.cropAreaLeft;

@@ -10,6 +10,9 @@
 
 @interface YasicClipAreaLayer : CAShapeLayer
 
+
+@property(assign,nonatomic) CGRect cropRect;
+
 @property(assign, nonatomic) NSInteger cropAreaLeft;
 @property(assign, nonatomic) NSInteger cropAreaTop;
 @property(assign, nonatomic) NSInteger cropAreaRight;
